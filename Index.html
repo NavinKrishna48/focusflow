@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f172a" id="themeMeta">
+    <title>FocusFlow v4</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%232563eb'/%3E%3Ccircle cx='50' cy='50' r='24' fill='none' stroke='%23ffffff' stroke-width='8'/%3E%3Ccircle cx='50' cy='50' r='8' fill='%2334d399'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-accent="overview">
+    <div class="app-shell">
+        <header class="hero-header">
+            <div class="hero-top">
+                <div class="brand-area">
+                    <svg class="progress-ring" width="38" height="38">
+                        <circle class="ring-bg" stroke-width="3.5" fill="transparent" r="15" cx="19" cy="19"/>
+                        <circle class="ring-fill" id="dailyRing" stroke-width="3.5" fill="transparent" r="15" cx="19" cy="19"/>
+                    </svg>
+                    <div>
+                        <h1>FocusFlow</h1>
+                        <p id="headerStatus" class="hero-sub">Ready</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="glass-btn" onclick="openSearchModal()" title="Global Search">🔍</button>
+                    <button class="glass-btn" onclick="openVaultModal()" title="Backup & Restore">⬇</button>
+                    <button class="glass-btn" onclick="toggleTheme()" title="Dark/Light Mode">◐</button>
+                </div>
+            </div>
+
+            <nav class="tabs">
+                <button class="tab-btn active" onclick="switchTab('overview', this)">Overview</button>
+                <button class="tab-btn" onclick="switchTab('cardbill', this)">Card Bill</button>
+                <button class="tab-btn" onclick="switchTab('daily', this)">Daily</button>
+                <button class="tab-btn" onclick="switchTab('weekly', this)">Weekly</button>
+                <button class="tab-btn" onclick="switchTab('monthly', this)">Monthly</button>
+                <button class="tab-btn" onclick="switchTab('reports', this)">Reports</button>
+                <button class="tab-btn" onclick="switchTab('reminders', this)">Reminders <span id="remBadge" class="nav-dot" style="display:none;"></span></button>
+                <button class="tab-btn" onclick="switchTab('notes', this)">Notes</button>
+            </nav>
+        </header>
+
+        <!-- SHARED CALENDAR STRIP (Overview, Daily, Weekly) -->
+        <div id="sharedCalWrap" class="px-wrap">
+            <div class="card calendar-card">
+                <div class="cal-header">
+                    <button class="cal-nav" onclick="shiftCalendar(-7)">‹</button>
+                    <span id="calMonthLabel" class="cal-title">November 2026</span>
+                    <div class="cal-right-tools">
+                        <button class="today-pill" onclick="stepDay(-1)">‹ Day</button>
+                        <button class="today-pill" onclick="stepDay(1)">Day ›</button>
+                        <button class="today-pill" onclick="jumpToToday()">Today</button>
+                        <button class="cal-nav" onclick="shiftCalendar(7)">›</button>
+                    </div>
+                </div>
+                <div id="calendarStrip" class="cal-strip"></div>
+            </div>
+        </div>
+
+        <!-- TAB 1: OVERVIEW (MASTER DAILY LOG) -->
+        <main id="overviewView" class="view active">
+            <div class="ov-banner">
+                <div>
+                    <h2 id="ovDateTitle">Today's Overview</h2>
+                    <p id="ovSubStats" class="ov-sub">0/0 Tasks • 0 Notes</p>
+                </div>
+                <button class="glass-pill-btn" onclick="shareDayOverview()">Share Day</button>
+            </div>
+
+            <div class="card reflection-card">
+                <span class="mini-tag">✨ Daily Highlight / Win</span>
+                <div class="row mt-6">
+                    <input type="text" id="dailyHighlightInput" placeholder="Write 1 line about today's highlight..." onchange="saveDailyHighlight()">
+                </div>
+            </div>
+
+            <div class="ov-section-title">
+                <span>📋 Tasks & Audit Log</span>
+                <span id="ovTaskPct" class="score-pill">0%</span>
+            </div>
+            <ul id="ovTaskList" class="item-list mb-14"></ul>
+
+            <div class="ov-section-title"><span>💳 Card Spends on this Date</span></div>
+            <ul id="ovCardList" class="item-list mb-14"></ul>
+
+            <div class="ov-section-title"><span>🔔 Reminders on this Date</span></div>
+            <ul id="ovRemList" class="item-list mb-14"></ul>
+
+            <div class="ov-section-title"><span>📝 Notes & Checklists Added</span></div>
+            <div id="ovNotesList" class="notes-grid"></div>
+        </main>
+
+        <!-- TAB 2: CREDIT CARD BILL (20-20 CYCLE + EMI + IMAGE/TEXT SHARE) -->
+        <main id="cardbillView" class="view">
+            <div class="card month-card">
+                <button class="cal-nav" onclick="shiftCardCycle(-1)">‹</button>
+                <div class="month-center">
+                    <span id="ccCycleLabel" class="cal-title">Nov 20 – Dec 20, 2026</span>
+                    <span class="month-hint">20th to 20th Billing Cycle</span>
+                </div>
+                <button class="cal-nav" onclick="shiftCardCycle(1)">›</button>
+            </div>
+
+            <div class="ov-banner" id="ccSummaryBanner">
+                <div>
+                    <span class="mini-tag" id="ccStatusTag">● UNPAID CYCLE</span>
+                    <h2 id="ccGrandTotal" style="font-size:22px; margin-top:2px;">₹0</h2>
+                    <p id="ccSplitSub" class="ov-sub">Spends: ₹0 • EMI: ₹0</p>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
+                    <button class="glass-pill-btn" id="ccPaidBtn" onclick="toggleCardCyclePaid()">Mark Paid</button>
+                    <div style="display:flex; gap:5px;">
+                        <button class="mini-btn" onclick="shareCardBillImageAndText()">📤 Image+Text</button>
+                        <button class="mini-btn" onclick="copyCardBillTextOnly()">📋 Text</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card stack-card">
+                <div class="mode-switch-bar">
+                    <button type="button" id="ccModeSpendBtn" class="mode-btn active" onclick="setCardEntryMode('spend')">💳 Regular Spend</button>
+                    <button type="button" id="ccModeEmiBtn" class="mode-btn" onclick="setCardEntryMode('emi')">📅 EMI Entry</button>
+                </div>
+
+                <div id="ccSpendFields" class="stack-card">
+                    <div class="row">
+                        <input type="text" id="ccSpendDesc" placeholder="What did you spend on? (e.g., Petrol, Food)">
+                        <input type="number" id="ccSpendAmt" placeholder="₹ Amount" style="max-width:115px;">
+                    </div>
+                    <div class="row">
+                        <input type="date" id="ccSpendDate">
+                        <select id="ccSpendCat" style="max-width:125px;">
+                            <option value="Fuel">Fuel</option>
+                            <option value="Food">Food</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Bills">Bills</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="ccEmiFields" class="stack-card" style="display:none;">
+                    <input type="text" id="ccEmiName" placeholder="EMI Name (e.g., Mobile EMI)">
+                    <div class="row">
+                        <input type="text" id="ccEmiMonth" placeholder="Month No. (e.g., 4 or 4/12)">
+                        <input type="number" id="ccEmiAmt" placeholder="₹ EMI Amount" style="max-width:130px;">
+                    </div>
+                </div>
+
+                <button class="solid-btn full-btn" onclick="addCardEntry()">+ Add to Bill Cycle</button>
+            </div>
+
+            <div class="ov-section-title"><span>📅 Active EMIs in this Cycle</span><span id="ccEmiTotalPill" class="score-pill">₹0</span></div>
+            <ul id="ccEmiList" class="item-list mb-14"></ul>
+
+            <div class="ov-section-title"><span>💳 Card Spends (20th – 20th)</span><span id="ccSpendTotalPill" class="score-pill">₹0</span></div>
+            <ul id="ccSpendList" class="item-list"></ul>
+        </main>
+
+        <!-- TAB 3-5: DAILY, WEEKLY, MONTHLY -->
+        <main id="tasksView" class="view">
+            <div id="monthOnlyCard" class="card month-card" style="display:none;">
+                <button class="cal-nav" onclick="shiftMonth(-1)">‹</button>
+                <div class="month-center">
+                    <span id="monthOnlyLabel" class="cal-title">November 2026</span>
+                    <span class="month-hint">Repeats on the same date every month</span>
+                </div>
+                <button class="cal-nav" onclick="shiftMonth(1)">›</button>
+            </div>
+
+            <div id="templateBar" class="template-bar">
+                <button class="tpl-chip" onclick="applyQuickTemplate('morning')">+ Morning Routine</button>
+                <button class="tpl-chip" onclick="applyQuickTemplate('work')">+ Workday Pack</button>
+            </div>
+
+            <div class="card input-card">
+                <div class="input-top">
+                    <button class="priority-toggle" id="priorityBtn" onclick="togglePriorityInput()" title="Priority"><span class="p-dot"></span></button>
+                    <input type="text" id="taskInput" placeholder="Task title..." onkeypress="if(event.key==='Enter') addTask()">
+                    <button class="solid-btn" onclick="addTask()">Add</button>
+                </div>
+                <input type="text" id="taskSubNoteInput" class="sub-input" placeholder="Optional detail (e.g., Page 45, Account no)...">
+                <div class="input-options">
+                    <label class="repeat-switch">
+                        <input type="checkbox" id="repeatToggle" checked>
+                        <span id="repeatLabel">Repeat every day</span>
+                    </label>
+                    <div id="monthDayPickerWrap" style="display:none;">
+                        <span class="mini-label">Day: </span>
+                        <select id="monthDaySelect" onchange="changeMonthSelectedDay(this.value)"></select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-header">
+                <div>
+                    <h2 id="selectedDateHeading">Today's Tasks</h2>
+                    <span id="recurrenceSub" class="sub-hint"></span>
+                </div>
+                <div class="score-pill" id="dayScorePill">0%</div>
+            </div>
+            <ul id="taskList" class="item-list"></ul>
+        </main>
+
+        <!-- TAB 6: REPORTS & HEATMAP -->
+        <main id="reportsView" class="view">
+            <div class="stats-hero-grid">
+                <div class="stat-box streak-box">
+                    <span class="stat-label">Active Streak</span>
+                    <strong id="statStreak">0 Days</strong>
+                    <span class="stat-sub">≥ 80% daily score</span>
+                </div>
+                <div class="stat-box avg-box">
+                    <span class="stat-label">Month Average</span>
+                    <strong id="statMonthAvg">0%</strong>
+                    <span id="statMonthCounts" class="stat-sub">0/0 done</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 class="card-heading">30-Day Consistency Heatmap</h3>
+                <div id="heatmapGrid" class="heatmap-grid"></div>
+                <div class="heatmap-legend"><span>Less</span><i class="hm-0"></i><i class="hm-1"></i><i class="hm-2"></i><i class="hm-3"></i><span>100%</span></div>
+            </div>
+
+            <div class="card">
+                <h3 class="card-heading">Category Breakdown</h3>
+                <div class="prog-group"><div class="prog-label"><span>Daily</span><strong id="repDailyPct">0%</strong></div><div class="prog-track"><div id="repDailyBar" class="prog-fill c-daily"></div></div></div>
+                <div class="prog-group"><div class="prog-label"><span>Weekly</span><strong id="repWeeklyPct">0%</strong></div><div class="prog-track"><div id="repWeeklyBar" class="prog-fill c-weekly"></div></div></div>
+                <div class="prog-group"><div class="prog-label"><span>Monthly</span><strong id="repMonthlyPct">0%</strong></div><div class="prog-track"><div id="repMonthlyBar" class="prog-fill c-monthly"></div></div></div>
+            </div>
+        </main>
+
+        <!-- TAB 7: REMINDERS -->
+        <main id="remindersView" class="view">
+            <div class="card stack-card">
+                <input type="text" id="remTitle" placeholder="Reminder title...">
+                <div class="preset-chips">
+                    <button type="button" class="chip" onclick="setQuickDate(0)">Today</button>
+                    <button type="button" class="chip" onclick="setQuickDate(1)">Tomorrow</button>
+                    <button type="button" class="chip" onclick="setQuickDate(7)">Next Week</button>
+                </div>
+                <div class="row">
+                    <input type="date" id="remDate">
+                    <input type="time" id="remTime" value="09:00">
+                </div>
+                <div class="row">
+                    <select id="remTag"><option value="Urgent">Urgent</option><option value="Work">Work</option><option value="Personal">Personal</option><option value="Finance">Finance</option></select>
+                    <select id="remRepeat"><option value="none">One-time</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select>
+                </div>
+                <button class="solid-btn full-btn" onclick="addReminder()">Save Reminder</button>
+            </div>
+            <div class="section-header"><h2>Scheduled Alerts</h2><span id="remCount" class="score-pill">0</span></div>
+            <ul id="reminderList" class="item-list"></ul>
+        </main>
+
+        <!-- TAB 8: SMART NOTES & 1-TAP CHECKLISTS -->
+        <main id="notesView" class="view">
+            <div class="note-filter-bar">
+                <button class="filter-chip active" onclick="setNoteFilter('All', this)">All</button>
+                <button class="filter-chip" onclick="setNoteFilter('Work', this)">Work</button>
+                <button class="filter-chip" onclick="setNoteFilter('Finance', this)">Finance</button>
+                <button class="filter-chip" onclick="setNoteFilter('Ideas', this)">Ideas</button>
+                <button class="filter-chip" onclick="setNoteFilter('Shopping', this)">Shopping</button>
+            </div>
+
+            <div class="card stack-card">
+                <div class="mode-switch-bar">
+                    <button type="button" id="modeTextBtn" class="mode-btn active" onclick="setNoteMode('text')">📝 Normal Note</button>
+                    <button type="button" id="modeCheckBtn" class="mode-btn" onclick="setNoteMode('checklist')">☑️ 1-Tap Checklist</button>
+                </div>
+                <div class="row">
+                    <input type="text" id="noteTitle" placeholder="Title (e.g., Shopping List)...">
+                    <select id="noteCat" style="max-width: 115px;">
+                        <option value="Work">Work</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Ideas">Ideas</option>
+                        <option value="Shopping">Shopping</option>
+                    </select>
+                </div>
+                <textarea id="noteBody" rows="3" placeholder="Write your note here..."></textarea>
+                <button class="solid-btn full-btn" onclick="addNote()">Save to Selected Date</button>
+            </div>
+            <div id="notesGrid" class="notes-grid"></div>
+        </main>
+    </div>
+
+    <div id="undoToast" class="toast"><span id="toastMsg">Done</span></div>
+
+    <div id="searchModal" class="modal-backdrop" onclick="if(event.target===this) closeSearchModal()">
+        <div class="modal-card">
+            <div class="modal-header"><h3>🔍 Global Search</h3><button class="close-btn" onclick="closeSearchModal()">✕</button></div>
+            <input type="text" id="globalSearchInput" placeholder="Search tasks, notes, or card spends..." oninput="runGlobalSearch()">
+            <div id="globalSearchResults" class="search-results-box"></div>
+        </div>
+    </div>
+
+    <div id="vaultModal" class="modal-backdrop" onclick="if(event.target===this) closeVaultModal()">
+        <div class="modal-card">
+            <div class="modal-header"><h3>Data Vault</h3><button class="close-btn" onclick="closeVaultModal()">✕</button></div>
+            <p id="lastSnapshotInfo" class="snapshot-info"></p>
+            <div class="modal-actions">
+                <button class="solid-btn full-btn" onclick="exportData()">Export Backup (.json)</button>
+                <label class="secondary-btn full-btn">Restore Backup<input type="file" accept=".json" onchange="importData(event)" hidden></label>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
